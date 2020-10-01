@@ -53,6 +53,14 @@ func getRequestAndForwardHandler(targetProtocol, targetHost, targetPort string) 
 		}
 
 		log.SetOutput(os.Stdout)
+
+		log.Println("Request headers:")
+		for name, values := range req.Header {
+			for _, value := range values {
+				log.Printf("%q:%q", name, value)
+			}
+		}
+
 		log.Printf("Request body: %q", body)
 
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
