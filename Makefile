@@ -3,7 +3,7 @@ all:
 	go build -o bin/net3-http-proxy ./cmd/net3-http-proxy
 
 .PHONY: build-image
-all:
+build-image:
 	docker build -t bespinian/net3-http-proxy .
 
 .PHONY: lint
