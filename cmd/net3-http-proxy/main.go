@@ -12,13 +12,11 @@ import (
 )
 
 func main() {
-	log.SetOutput(os.Stdout)
 	log.Printf("Starting proxy")
 
 	portStr := getEnv("NET3_HTTP_PROXY_PORT", "81")
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		log.SetOutput(os.Stderr)
 		log.Fatal(fmt.Errorf("Invalid value for port: %w", err))
 	}
 	targetProtocol := getEnv("NET3_HTTP_PROXY_TARGET_PROTOCOL", "http")
@@ -26,7 +24,6 @@ func main() {
 	targetPortStr := getEnv("NET3_HTTP_PROXY_TARGET_PORT", "80")
 	targetPort, err := strconv.Atoi(targetPortStr)
 	if err != nil {
-		log.SetOutput(os.Stderr)
 		log.Fatal(fmt.Errorf("Invalid value for target port: %w", err))
 	}
 
@@ -36,7 +33,6 @@ func main() {
 	http.HandleFunc("/", makeProxyHandleFunc(targetProtocol, targetHost, targetPort))
 	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
-		log.SetOutput(os.Stderr)
 		log.Fatal(fmt.Errorf("Could not start proxy server: %w", err))
 	}
 }
@@ -54,17 +50,13 @@ func makeProxyHandleFunc(targetProtocol, targetHost string, targetPort int) func
 	return func(res http.ResponseWriter, req *http.Request) {
 		bodyCopy, err := req.GetBody()
 		if err != nil {
-			log.SetOutput(os.Stderr)
 			log.Print(fmt.Errorf("error getting request body: %w", err))
 		}
 
 		body, err := ioutil.ReadAll(bodyCopy)
 		if err != nil {
-			log.SetOutput(os.Stderr)
 			log.Print(fmt.Errorf("error reading request body: %w", err))
 		}
-
-		log.SetOutput(os.Stdout)
 
 		log.Println("Request headers:")
 		for name, values := range req.Header {
@@ -78,7 +70,6 @@ func makeProxyHandleFunc(targetProtocol, targetHost string, targetPort int) func
 
 		targetUrl, err := url.Parse(fmt.Sprintf("%s://%s:%v", targetProtocol, targetHost, targetPort))
 		if err != nil {
-			log.SetOutput(os.Stderr)
 			log.Print(fmt.Errorf("Invalid proxy target url: %w", err))
 		}
 		proxy := httputil.NewSingleHostReverseProxy(targetUrl)
