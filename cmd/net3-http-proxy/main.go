@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -47,30 +48,37 @@ func getEnv(key, fallback string) string {
 }
 
 func makeProxyHandleFunc(targetHost string, targetPort int) func(res http.ResponseWriter, req *http.Request) {
+	targetUrl, err := url.Parse(fmt.Sprintf("http://%s:%v", targetHost, targetPort))
+	if err != nil {
+		log.Print(fmt.Errorf("Invalid proxy target url: %w", err))
+	}
+	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
+
 	return func(res http.ResponseWriter, req *http.Request) {
+		logLines := make([]string, 0)
+
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Print(fmt.Errorf("error reading request body: %w", err))
 		}
 
-		log.Println("Request headers:")
+		logLines = append(logLines, fmt.Sprintf("%s %s", req.Method, req.RequestURI))
+
+		logLines = append(logLines, "Request headers:")
 		for name, values := range req.Header {
 			for _, v := range values {
-				log.Printf("%s: %s", name, v)
+				logLines = append(logLines, fmt.Sprintf("%s: %s", name, v))
 			}
 		}
 
-		log.Println("Request body:")
-		log.Println(string(body))
+		logLines = append(logLines, "Request body:")
+		logLines = append(logLines, string(body))
+
+		log.Println(strings.Join(logLines, "\n"))
 
 		req.Body.Close()
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
-		targetUrl, err := url.Parse(fmt.Sprintf("http://%s:%v", targetHost, targetPort))
-		if err != nil {
-			log.Print(fmt.Errorf("Invalid proxy target url: %w", err))
-		}
-		proxy := httputil.NewSingleHostReverseProxy(targetUrl)
 		proxy.ServeHTTP(res, req)
 	}
 }
