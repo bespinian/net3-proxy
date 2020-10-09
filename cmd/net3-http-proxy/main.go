@@ -13,36 +13,6 @@ import (
 	"strings"
 )
 
-func makeLogResponseFunc(logLines []string) func(*http.Response) error {
-	return func(resp *http.Response) error {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("error reading response body: %w", err)
-		}
-
-		logLines = append(logLines, "")
-		logLines = append(logLines, "Response Headers")
-		for name, values := range resp.Header {
-			for _, v := range values {
-				logLines = append(logLines, fmt.Sprintf("%s: %s", name, v))
-			}
-		}
-
-		if len(body) > 0 {
-			logLines = append(logLines, "")
-			logLines = append(logLines, "Response Body")
-			logLines = append(logLines, string(body))
-		}
-
-		resp.Body.Close()
-		resp.Body = ioutil.NopCloser(bytes.NewReader(body))
-
-		log.Println(strings.Join(logLines, "\n"))
-
-		return nil
-	}
-}
-
 func main() {
 	log.Printf("Starting proxy")
 
@@ -93,7 +63,7 @@ func makeProxyHandleFunc(targetHost string, targetPort int) func(res http.Respon
 		}
 
 		logLines = append(logLines, "")
-		logLines = append(logLines, "---------------")
+		logLines = append(logLines, "-------------------")
 
 		logLines = append(logLines, "")
 		logLines = append(logLines, fmt.Sprintf("%s %s", req.Method, req.RequestURI))
@@ -106,16 +76,42 @@ func makeProxyHandleFunc(targetHost string, targetPort int) func(res http.Respon
 			}
 		}
 
-		if len(body) > 0 {
-			logLines = append(logLines, "")
-			logLines = append(logLines, "Request Body")
-			logLines = append(logLines, string(body))
-		}
+		logLines = append(logLines, "")
+		logLines = append(logLines, "Request Body")
+		logLines = append(logLines, string(body))
 
 		req.Body.Close()
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 		proxy.ModifyResponse = makeLogResponseFunc(logLines)
 		proxy.ServeHTTP(res, req)
+	}
+}
+
+func makeLogResponseFunc(logLines []string) func(*http.Response) error {
+	return func(resp *http.Response) error {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("error reading response body: %w", err)
+		}
+
+		logLines = append(logLines, "")
+		logLines = append(logLines, "Response Headers")
+		for name, values := range resp.Header {
+			for _, v := range values {
+				logLines = append(logLines, fmt.Sprintf("%s: %s", name, v))
+			}
+		}
+
+		logLines = append(logLines, "")
+		logLines = append(logLines, "Response Body")
+		logLines = append(logLines, string(body))
+
+		resp.Body.Close()
+		resp.Body = ioutil.NopCloser(bytes.NewReader(body))
+
+		log.Println(strings.Join(logLines, "\n"))
+
+		return nil
 	}
 }
