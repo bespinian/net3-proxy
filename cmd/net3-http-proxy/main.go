@@ -62,17 +62,25 @@ func makeProxyHandleFunc(targetHost string, targetPort int) func(res http.Respon
 			log.Print(fmt.Errorf("error reading request body: %w", err))
 		}
 
+		logLines = append(logLines, "")
+		logLines = append(logLines, "---------------")
+
+		logLines = append(logLines, "")
 		logLines = append(logLines, fmt.Sprintf("%s %s", req.Method, req.RequestURI))
 
-		logLines = append(logLines, "Request headers:")
+		logLines = append(logLines, "")
+		logLines = append(logLines, "Request headers")
 		for name, values := range req.Header {
 			for _, v := range values {
 				logLines = append(logLines, fmt.Sprintf("%s: %s", name, v))
 			}
 		}
 
-		logLines = append(logLines, "Request body:")
-		logLines = append(logLines, string(body))
+		if len(body) > 0 {
+			logLines = append(logLines, "")
+			logLines = append(logLines, "Request body")
+			logLines = append(logLines, string(body))
+		}
 
 		log.Println(strings.Join(logLines, "\n"))
 
