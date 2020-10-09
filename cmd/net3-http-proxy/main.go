@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,67 +8,78 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
 )
 
 func main() {
-
 	log.SetOutput(os.Stdout)
-	log.Printf("Starting proxy.")
+	log.Printf("Starting proxy")
 
-	net3HttpProxyPort := getEnv("NET3_HTTP_PROXY_PORT", "81")
-	net3HttpProxyTargetProtocol := getEnv("NET3_HTTP_PROXY_TARGET_PROTOCOL", "http")
-	net3HttpProxyTargetHost := getEnv("NET3_HTTP_PROXY_TARGET_HOST", "127.0.0.1")
-	net3HttpProxyTargetPort := getEnv("NET3_HTTP_PROXY_TARGET_PORT", "80")
-
-	log.Printf("Listening on port %q", net3HttpProxyPort)
-	log.Printf("Forwarding to host %q on port %q", net3HttpProxyTargetHost, net3HttpProxyTargetPort)
-
-	http.HandleFunc("/", getRequestAndForwardHandler(net3HttpProxyTargetProtocol, net3HttpProxyTargetHost, net3HttpProxyTargetPort))
-	if err := http.ListenAndServe(":"+net3HttpProxyPort, nil); err != nil {
+	portStr := getEnv("NET3_HTTP_PROXY_PORT", "81")
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
 		log.SetOutput(os.Stderr)
-		log.Print(fmt.Errorf("Could not start proxy server: %w", err))
-		panic(err)
+		log.Fatal(fmt.Errorf("Invalid value for port: %w", err))
+	}
+	targetProtocol := getEnv("NET3_HTTP_PROXY_TARGET_PROTOCOL", "http")
+	targetHost := getEnv("NET3_HTTP_PROXY_TARGET_HOST", "localhost")
+	targetPortStr := getEnv("NET3_HTTP_PROXY_TARGET_PORT", "80")
+	targetPort, err := strconv.Atoi(targetPortStr)
+	if err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatal(fmt.Errorf("Invalid value for target port: %w", err))
 	}
 
+	log.Printf("Listening on port %v", port)
+	log.Printf("Forwarding to host %q on port %v", targetHost, targetPort)
+
+	http.HandleFunc("/", makeProxyHandleFunc(targetProtocol, targetHost, targetPort))
+	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+	if err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatal(fmt.Errorf("Could not start proxy server: %w", err))
+	}
 }
 
 func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		log.Printf("Variable %q not set. Falling back to default %q", key, fallback)
+		return fallback
 	}
-	log.Printf("Variable %q not set. Falling back to default %q", key, fallback)
-	return fallback
+	return value
 }
 
-func getRequestAndForwardHandler(targetProtocol, targetHost, targetPort string) func(res http.ResponseWriter, req *http.Request) {
+func makeProxyHandleFunc(targetProtocol, targetHost string, targetPort int) func(res http.ResponseWriter, req *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
-
-		body, err := ioutil.ReadAll(req.Body)
+		bodyCopy, err := req.GetBody()
 		if err != nil {
 			log.SetOutput(os.Stderr)
-			log.Print(fmt.Errorf("error reading body: %w", err))
-			http.Error(res, "can't read body", http.StatusBadRequest)
-			return
+			log.Print(fmt.Errorf("error getting request body: %w", err))
+		}
+
+		body, err := ioutil.ReadAll(bodyCopy)
+		if err != nil {
+			log.SetOutput(os.Stderr)
+			log.Print(fmt.Errorf("error reading request body: %w", err))
 		}
 
 		log.SetOutput(os.Stdout)
 
 		log.Println("Request headers:")
 		for name, values := range req.Header {
-			for _, value := range values {
-				log.Printf("%q:%q", name, value)
+			for _, v := range values {
+				log.Printf("%s: %s", name, v)
 			}
 		}
 
-		log.Printf("Request body: %q", body)
+		log.Println("Request body:")
+		log.Println(body)
 
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		targetUrl, err := url.Parse(targetProtocol + "://" + targetHost + ":" + targetPort)
+		targetUrl, err := url.Parse(fmt.Sprintf("%s://%s:%v", targetProtocol, targetHost, targetPort))
 		if err != nil {
 			log.SetOutput(os.Stderr)
-			log.Print(fmt.Errorf("invalid proxy target url: %w", err))
-			http.Error(res, "invalid target url", http.StatusBadRequest)
-			return
+			log.Print(fmt.Errorf("Invalid proxy target url: %w", err))
 		}
 		proxy := httputil.NewSingleHostReverseProxy(targetUrl)
 		proxy.ServeHTTP(res, req)

@@ -2,9 +2,9 @@
 all:
 	go build -o bin/net3-http-proxy ./cmd/net3-http-proxy
 
-.PHONY: install
-install:
-	go install ./cmd/net3-http-proxy
+.PHONY: build-image
+all:
+	docker build -t bespinian/net3-http-proxy .
 
 .PHONY: lint
 lint:
