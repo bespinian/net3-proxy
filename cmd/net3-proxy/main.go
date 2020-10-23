@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	log.Printf("Starting proxy")
+	log.Println("Starting proxy")
 
 	portStr := getEnv("NET3_HTTP_PROXY_PORT", "81")
 	port, err := strconv.Atoi(portStr)
@@ -28,14 +28,14 @@ func main() {
 		log.Fatal(fmt.Errorf("Invalid value for target port: %w", err))
 	}
 
-	log.Printf("Listening on localhost:%v", port)
-	log.Printf("Forwarding to %s:%v", targetHost, targetPort)
-
 	handleFunc, err := makeProxyHandleFunc(targetHost, targetPort)
 	if err != nil {
 		log.Fatal(fmt.Errorf("Error making proxy handle func: %w", err))
 	}
 	http.HandleFunc("/", handleFunc)
+
+	log.Printf("Listening on localhost:%v", port)
+	log.Printf("Forwarding to %s:%v", targetHost, targetPort)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
