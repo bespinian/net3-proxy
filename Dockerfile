@@ -1,5 +1,5 @@
 FROM golang:1-alpine
-WORKDIR /usr/src/net3-http-proxy
+WORKDIR /usr/src/net3-proxy
 COPY . ./
-RUN go build -o bin/net3-http-proxy ./cmd/net3-http-proxy
-ENTRYPOINT ["./bin/net3-http-proxy"]
+RUN go build -o bin/net3-proxy ./cmd/net3-proxy
+ENTRYPOINT ["./bin/net3-proxy"]

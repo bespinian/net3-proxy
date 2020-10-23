@@ -1,10 +1,10 @@
 .PHONY: build
 all:
-	go build -o bin/net3-http-proxy ./cmd/net3-http-proxy
+	go build -o bin/net3-proxy ./cmd/net3-proxy
 
 .PHONY: build-image
 build-image:
-	docker build -t bespinian/net3-http-proxy .
+	docker build -t bespinian/net3-proxy .
 
 .PHONY: lint
 lint:
