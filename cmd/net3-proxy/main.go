@@ -19,18 +19,18 @@ func main() {
 	portStr := getEnv("NET3_HTTP_PROXY_PORT", "81")
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Invalid value for port: %w", err))
+		log.Fatal(fmt.Errorf("invalid value for port: %w", err))
 	}
 	targetHost := getEnv("NET3_HTTP_PROXY_TARGET_HOST", "localhost")
 	targetPortStr := getEnv("NET3_HTTP_PROXY_TARGET_PORT", "80")
 	targetPort, err := strconv.Atoi(targetPortStr)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Invalid value for target port: %w", err))
+		log.Fatal(fmt.Errorf("invalid value for target port: %w", err))
 	}
 
 	handleFunc, err := makeProxyHandleFunc(targetHost, targetPort)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Error making proxy handle func: %w", err))
+		log.Fatal(fmt.Errorf("error making proxy handle func: %w", err))
 	}
 	http.HandleFunc("/", handleFunc)
 
@@ -39,7 +39,7 @@ func main() {
 
 	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Could not start proxy server: %w", err))
+		log.Fatal(fmt.Errorf("could not start proxy server: %w", err))
 	}
 }
 
@@ -52,13 +52,13 @@ func getEnv(key, fallback string) string {
 	return value
 }
 
-func makeProxyHandleFunc(targetHost string, targetPort int) (func(res http.ResponseWriter, req *http.Request), error) {
-	targetUrl, err := url.Parse(fmt.Sprintf("http://%s:%v", targetHost, targetPort))
+func makeProxyHandleFunc(targetHost string, targetPort int) (func(http.ResponseWriter, *http.Request), error) {
+	targetURL, err := url.Parse(fmt.Sprintf("http://%s:%v", targetHost, targetPort))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing proxy target URL: %w", err)
 	}
 
-	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
 	return func(res http.ResponseWriter, req *http.Request) {
 		logLines := make([]string, 0)

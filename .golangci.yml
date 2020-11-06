@@ -1,0 +1,14 @@
+linters:
+  enable-all: true
+  disable:
+    - bodyclose # Because of https://github.com/timakin/bodyclose/issues/30
+    - nlreturn
+    - wsl
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  maligned:
+    suggest-new: true
+  misspell:
+    locale: US
