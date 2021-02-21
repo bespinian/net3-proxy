@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -63,7 +63,7 @@ func makeProxyHandleFunc(targetHost string, targetPort int) (func(http.ResponseW
 	return func(res http.ResponseWriter, req *http.Request) {
 		logLines := make([]string, 0)
 
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			log.Print(fmt.Errorf("error reading request body: %w", err))
 		}
@@ -87,7 +87,7 @@ func makeProxyHandleFunc(targetHost string, targetPort int) (func(http.ResponseW
 		logLines = append(logLines, string(body))
 
 		req.Body.Close()
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		req.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		proxy.ModifyResponse = makeLogResponseFunc(logLines)
 		proxy.ServeHTTP(res, req)
@@ -96,7 +96,7 @@ func makeProxyHandleFunc(targetHost string, targetPort int) (func(http.ResponseW
 
 func makeLogResponseFunc(logLines []string) func(*http.Response) error {
 	return func(resp *http.Response) error {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("error reading response body: %w", err)
 		}
@@ -114,7 +114,7 @@ func makeLogResponseFunc(logLines []string) func(*http.Response) error {
 		logLines = append(logLines, string(body))
 
 		resp.Body.Close()
-		resp.Body = ioutil.NopCloser(bytes.NewReader(body))
+		resp.Body = io.NopCloser(bytes.NewReader(body))
 
 		log.Println(strings.Join(logLines, "\n"))
 

@@ -1,3 +1,3 @@
 module github.com/bespinian/net3-proxy
 
-go 1.15
+go 1.16
