@@ -1,8 +1,11 @@
 linters:
   enable-all: true
   disable:
-    - bodyclose # Because of https://github.com/timakin/bodyclose/issues/30
+    - golint
+    - interfacer
+    - maligned
     - nlreturn
+    - scopelint
     - wsl
 
 linters-settings:
