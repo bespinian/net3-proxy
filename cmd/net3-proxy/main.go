@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -22,11 +23,7 @@ func main() {
 		log.Fatal(fmt.Errorf("invalid value for port: %w", err))
 	}
 	targetHost := getEnv("NET3_HTTP_PROXY_TARGET_HOST", "localhost")
-	targetPortStr := getEnv("NET3_HTTP_PROXY_TARGET_PORT", "80")
-	targetPort, err := strconv.Atoi(targetPortStr)
-	if err != nil {
-		log.Fatal(fmt.Errorf("invalid value for target port: %w", err))
-	}
+	targetPort := getEnv("NET3_HTTP_PROXY_TARGET_PORT", "80")
 
 	handleFunc, err := makeProxyHandleFunc(targetHost, targetPort)
 	if err != nil {
@@ -52,8 +49,8 @@ func getEnv(key, fallback string) string {
 	return value
 }
 
-func makeProxyHandleFunc(targetHost string, targetPort int) (func(http.ResponseWriter, *http.Request), error) {
-	targetURL, err := url.Parse(fmt.Sprintf("http://%s:%v", targetHost, targetPort))
+func makeProxyHandleFunc(targetHost, targetPort string) (func(http.ResponseWriter, *http.Request), error) {
+	targetURL, err := url.Parse(fmt.Sprintf("http://%s", net.JoinHostPort(targetHost, targetPort)))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing proxy target URL: %w", err)
 	}
