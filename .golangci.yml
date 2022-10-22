@@ -1,12 +1,19 @@
 linters:
   enable-all: true
   disable:
+    - bodyclose
+    - deadcode
     - exhaustivestruct
+    - exhaustruct
     - golint
+    - ifshort
     - interfacer
     - maligned
     - nlreturn
+    - nosnakecase
     - scopelint
+    - structcheck
+    - varcheck
     - wsl
 
 linters-settings:

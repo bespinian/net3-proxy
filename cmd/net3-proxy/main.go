@@ -12,7 +12,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const serverTimeout = 5 * time.Second
 
 func main() {
 	log.Println("Starting proxy")
@@ -34,7 +37,12 @@ func main() {
 	log.Printf("Listening on localhost:%v", port)
 	log.Printf("Forwarding to %s:%v", targetHost, targetPort)
 
-	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%v", port),
+		ReadTimeout:  serverTimeout,
+		WriteTimeout: serverTimeout,
+	}
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatal(fmt.Errorf("could not start proxy server: %w", err))
 	}
